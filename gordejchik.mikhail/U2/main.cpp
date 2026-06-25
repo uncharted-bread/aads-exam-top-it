@@ -4,82 +4,86 @@
 #include <cstddef>
 #include "dynarray.hpp"
 #include "person.hpp"
+#include "meeting.hpp"
 #include "io.hpp"
+#include "commands.hpp"
 
-struct args_t {
-  std::string inFile_;
-  std::string outFile_;
-  bool hasIn_;
-  bool hasOut_;
-};
+namespace gordejchik {
+  struct args_t {
+    std::string personsFile_;
+    std::string dataFile_;
+    bool hasPersons_;
+    bool hasData_;
+  };
+}
 
-static int parseArgs(int argc, char* argv[], args_t& args)
+static int parseArgs(int argc, char* argv[], gordejchik::args_t& args)
 {
-  args.hasIn_ = false;
-  args.hasOut_ = false;
+  args.hasPersons_ = false;
+  args.hasData_ = false;
   for (int i = 1; i < argc; ++i) {
     std::string arg = argv[i];
     if (arg.size() > 3 && arg.compare(0, 3, "in:") == 0) {
-      if (args.hasIn_) {
+      if (args.hasPersons_) {
         return 1;
       }
-      args.inFile_ = arg.substr(3);
-      args.hasIn_ = true;
-    } else if (arg.size() > 4 && arg.compare(0, 4, "out:") == 0) {
-      if (args.hasOut_) {
+      args.personsFile_ = arg.substr(3);
+      args.hasPersons_ = true;
+    } else if (arg.size() > 5 && arg.compare(0, 5, "data:") == 0) {
+      if (args.hasData_) {
         return 1;
       }
-      args.outFile_ = arg.substr(4);
-      args.hasOut_ = true;
+      args.dataFile_ = arg.substr(5);
+      args.hasData_ = true;
     } else {
       return 1;
     }
+  }
+  if (!args.hasData_) {
+    return 1;
   }
   return 0;
 }
 
 int main(int argc, char* argv[])
 {
-  if (argc > 3) {
-    std::cerr << "Too many arguments" << "\n";
-    return 1;
-  }
-  args_t args;
+  gordejchik::args_t args;
   if (parseArgs(argc, argv, args) != 0) {
     std::cerr << "Invalid arguments" << "\n";
     return 1;
   }
 
-  gordejchik::dynarray_t< gordejchik::Person > persons;
+  gordejchik::dynarray_t< gordejchik::person_t > persons;
   gordejchik::init(persons);
-  gordejchik::read_result_t counts;
-  counts.success_ = 0;
-  counts.ignored_ = 0;
+  gordejchik::dynarray_t< gordejchik::meeting_t > meetings;
+  gordejchik::init(meetings);
 
-  if (args.hasIn_) {
-    std::ifstream fin(args.inFile_);
+  if (args.hasPersons_) {
+    std::ifstream fin(args.personsFile_);
     if (!fin.is_open()) {
-      std::cerr << "Не получается открыть input файл" << "\n";
+      std::cerr << "Cannot open persons file" << "\n";
       return 2;
     }
-    counts = gordejchik::readPersons(fin, persons);
-  } else {
-    counts = gordejchik::readPersons(std::cin, persons);
+    gordejchik::readPersons(fin, persons);
   }
 
-  if (args.hasOut_) {
-    std::ofstream fout(args.outFile_);
-    if (!fout.is_open()) {
-      gordejchik::destroy(persons);
-      std::cerr << "Не получается открыть output файл" << "\n";
-      return 2;
-    }
-    gordejchik::writePersons(fout, persons);
-  } else {
-    gordejchik::writePersons(std::cout, persons);
+  std::ifstream fdata(args.dataFile_);
+  if (!fdata.is_open()) {
+    gordejchik::destroy(persons);
+    std::cerr << "Cannot open data file" << "\n";
+    return 2;
+  }
+  int meetResult = gordejchik::readMeetings(fdata, meetings, persons);
+  if (meetResult != 0) {
+    gordejchik::destroy(persons);
+    gordejchik::destroy(meetings);
+    std::cerr << "Malformed meeting data" << "\n";
+    return meetResult;
   }
 
-  std::cerr << counts.success_ << " " << counts.ignored_ << "\n";
+  gordejchik::runCommands(std::cin, persons, meetings);
+
   gordejchik::destroy(persons);
+  gordejchik::destroy(meetings);
   return 0;
 }

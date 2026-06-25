@@ -126,10 +126,10 @@ int main(int argc, char* argv[])
   std::ostream& output = outFile.empty() ? std::cout : fout;
 
   for (size_t i = 0; i < persons.size_; ++i) {
-    output << persons.data_[i].id << "\n" << persons.data_[i].info << "\n";
+    output << persons.data_[i].id << " " << persons.data_[i].info << "\n";
   }
 
-  std::cerr << success << "\n" << ignored << "\n";
+  std::cerr << success << " " << ignored << "\n";
   gordejchik::destroy(persons);
   return 0;
 }

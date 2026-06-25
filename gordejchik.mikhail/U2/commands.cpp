@@ -157,6 +157,87 @@ static void cmdGreater(const gordejchik::dynarray_t< gordejchik::person_t >& per
   gordejchik::destroy(entries);
 }
 
+static void cmdDeanon(gordejchik::dynarray_t< gordejchik::person_t >& persons,
+    gordejchik::dynarray_t< gordejchik::meeting_t >& meetings,
+    size_t anonId, size_t targetId)
+{
+  size_t anonIdx = gordejchik::findPersonById(persons, anonId);
+  size_t targetIdx = gordejchik::findPersonById(persons, targetId);
+  if (anonIdx == gordejchik::npos || targetIdx == gordejchik::npos) {
+    printInvalid();
+    return;
+  }
+  if (!persons.data_[anonIdx].info_.empty() || persons.data_[targetIdx].info_.empty()) {
+    printInvalid();
+    return;
+  }
+  for (size_t i = 0; i < meetings.size_; ++i) {
+    if (meetings.data_[i].id1_ == anonId) {
+      meetings.data_[i].id1_ = targetId;
+    }
+    if (meetings.data_[i].id2_ == anonId) {
+      meetings.data_[i].id2_ = targetId;
+    }
+  }
+  size_t i = meetings.size_;
+  while (i > 0) {
+    --i;
+    if (meetings.data_[i].id1_ == meetings.data_[i].id2_) {
+      gordejchik::removeAt(meetings, i);
+    }
+  }
+  gordejchik::removeAt(persons, anonIdx);
+}
+
+static void cmdCommons(const gordejchik::dynarray_t< gordejchik::person_t >& persons,
+    const gordejchik::dynarray_t< gordejchik::meeting_t >& meetings,
+    size_t id1, size_t id2)
+{
+  if (gordejchik::findPersonById(persons, id1) == gordejchik::npos
+      || gordejchik::findPersonById(persons, id2) == gordejchik::npos) {
+    printInvalid();
+    return;
+  }
+  gordejchik::dynarray_t< size_t > partners1;
+  gordejchik::init(partners1);
+  gordejchik::dynarray_t< size_t > partners2;
+  gordejchik::init(partners2);
+  for (size_t i = 0; i < meetings.size_; ++i) {
+    const gordejchik::meeting_t& m = meetings.data_[i];
+    if (m.id1_ == id1) {
+      gordejchik::pushBack(partners1, m.id2_);
+    } else if (m.id2_ == id1) {
+      gordejchik::pushBack(partners1, m.id1_);
+    }
+    if (m.id1_ == id2) {
+      gordejchik::pushBack(partners2, m.id2_);
+    } else if (m.id2_ == id2) {
+      gordejchik::pushBack(partners2, m.id1_);
+    }
+  }
+  std::sort(partners1.data_, partners1.data_ + partners1.size_);
+  std::sort(partners2.data_, partners2.data_ + partners2.size_);
+  size_t i = 0;
+  size_t j = 0;
+  size_t prev = gordejchik::npos;
+  while (i < partners1.size_ && j < partners2.size_) {
+    if (partners1.data_[i] < partners2.data_[j]) {
+      ++i;
+    } else if (partners1.data_[i] > partners2.data_[j]) {
+      ++j;
+    } else {
+      if (partners1.data_[i] != prev) {
+        std::cout << partners1.data_[i] << "\n";
+        prev = partners1.data_[i];
+      }
+      ++i;
+      ++j;
+    }
+  }
+  gordejchik::destroy(partners1);
+  gordejchik::destroy(partners2);
+}
+
 static bool parseId(std::istream& in, size_t& id)
 {
   if (!(in >> id)) {
@@ -234,6 +315,22 @@ void gordejchik::runCommands(std::istream& in, dynarray_t< person_t >& persons,
         continue;
       }
       cmdGreater(persons, meetings, time, id);
+    } else if (cmd == "deanon") {
+      size_t anonId = 0;
+      size_t targetId = 0;
+      if (!parseId(in, anonId) || !parseId(in, targetId)) {
+        printInvalid();
+        continue;
+      }
+      cmdDeanon(persons, meetings, anonId, targetId);
+    } else if (cmd == "commons") {
+      size_t id1 = 0;
+      size_t id2 = 0;
+      if (!parseId(in, id1) || !parseId(in, id2)) {
+        printInvalid();
+        continue;
+      }
+      cmdCommons(persons, meetings, id1, id2);
     } else {
       printInvalid();
       std::string rest;

@@ -65,6 +65,7 @@ int main(int argc, char* argv[])
   while (std::getline(input, line)) {
     size_t first = line.find_first_not_of(" \t");
     if (first == std::string::npos) {
+      ++ignored;
       continue;
     }
     size_t space = line.find_first_of(" \t", first);

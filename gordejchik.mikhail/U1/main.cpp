@@ -129,7 +129,7 @@ int main(int argc, char* argv[])
     output << persons.data_[i].id << " " << persons.data_[i].info << "\n";
   }
 
-  std::cerr << success << " " << ignored << "\n";
+  std::cerr << "\n" << "\n";
   gordejchik::destroy(persons);
   return 0;
 }

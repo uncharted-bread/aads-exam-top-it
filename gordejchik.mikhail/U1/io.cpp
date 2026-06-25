@@ -54,13 +54,16 @@ gordejchik::read_result_t gordejchik::readPersons(std::istream& in, dynarray_t< 
   result.ignored_ = 0;
   std::string line;
   while (std::getline(in, line)) {
-    stripCr(line);
-    size_t id = 0;
-    std::string info;
-    if (!parseLine(line, id, info)) {
-      ++result.ignored_;
-      continue;
-    }
+      stripCr(line);
+      if (line.empty()) {
+        continue;
+      }
+      size_t id = 0;
+      std::string info;
+      if (!parseLine(line, id, info)) {
+        ++result.ignored_;
+        continue;
+      }
     if (hasId(arr, id)) {
       ++result.ignored_;
       continue;

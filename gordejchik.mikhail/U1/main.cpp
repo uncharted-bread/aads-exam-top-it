@@ -40,10 +40,6 @@ static int parseArgs(int argc, char* argv[], args_t& args)
 
 int main(int argc, char* argv[])
 {
-  if (argc > 3) {
-    std::cerr << "Too many arguments" << "\n";
-    return 1;
-  }
   args_t args;
   if (parseArgs(argc, argv, args) != 0) {
     std::cerr << "Invalid arguments" << "\n";
